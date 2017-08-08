@@ -1,6 +1,58 @@
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
+---
 
+## Controller
+The Non Linear Model Predictive Controller for this project is based on the Kinematic Bicycle model.
+This model neglects inertia, friction and torque but changes of heading direction.
+The state of this model is composed by the car's coordinates (x, y), the car velocity(v), the orientation(psi), the error in orientation (epsi), and the cross-track error(cte).
+The model has two actuators, the steering angle (delta), and the acceleration (throttle).
+The update equations used are the following:
+```C++
+      fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+      fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+      fg[2 + psi_start + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+      fg[2 + cte_start + i] =
+          cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+      fg[2 + epsi_start + i] =
+          epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+```
+## Timestep Length and Elapsed Duration (N & dt)
+Defining the prediction horizon as T = N * dt I studied that with short values of T the controls are more responsive
+but less accurate, long value of T lead to smoother controls. I choosed after some tries setting N = 12 and dt = 0.05
+that allow a good compromise between speed and control.
+
+## Polynomial Fitting and MPC Preprocessing
+The coordinates of the waypoints are transformed from the global coordinate system of the map to the car coordinate system by this function:
+```C++
+Eigen::MatrixXd transformGlobalToLocal(double x, double y, double psi, const vector<double> & ptsx, const vector<double> & ptsy) {
+
+  assert(ptsx.size() == ptsy.size());
+  unsigned len = ptsx.size();
+
+  auto waypoints = Eigen::MatrixXd(2,len);
+
+  for (auto i=0; i<len ; ++i){
+    waypoints(0,i) =   cos(psi) * (ptsx[i] - x) + sin(psi) * (ptsy[i] - y);
+    waypoints(1,i) =  -sin(psi) * (ptsx[i] - x) + cos(psi) * (ptsy[i] - y);
+  }
+
+  return waypoints;
+
+}
+```
+Than the waipoints are fitted by a third degree polynomial.
+```C++
+auto coeffs = polyfit(Ptsx, Ptsy, 3);
+```
+
+
+The cofficients of that polynomial are passed to the mpc.Solve() function to calculate the optimum solution for the actuators.
+
+## Model Predictive Control with Latency
+!!!!!TBW
+```
 ---
 
 ## Dependencies
@@ -19,7 +71,7 @@ Self-Driving Car Engineer Nanodegree Program
   * Run either `install-mac.sh` or `install-ubuntu.sh`.
   * If you install from source, checkout to commit `e94b6e1`, i.e.
     ```
-    git clone https://github.com/uWebSockets/uWebSockets 
+    git clone https://github.com/uWebSockets/uWebSockets
     cd uWebSockets
     git checkout e94b6e1
     ```
@@ -42,7 +94,7 @@ Self-Driving Car Engineer Nanodegree Program
        per this [forum post](https://discussions.udacity.com/t/incorrect-checksum-for-freed-object/313433/19).
   * Linux
     * You will need a version of Ipopt 3.12.1 or higher. The version available through `apt-get` is 3.11.x. If you can get that version to work great but if not there's a script `install_ipopt.sh` that will install Ipopt. You just need to download the source from the Ipopt [releases page](https://www.coin-or.org/download/source/Ipopt/) or the [Github releases](https://github.com/coin-or/Ipopt/releases) page.
-    * Then call `install_ipopt.sh` with the source directory as the first argument, ex: `sudo bash install_ipopt.sh Ipopt-3.12.1`. 
+    * Then call `install_ipopt.sh` with the source directory as the first argument, ex: `sudo bash install_ipopt.sh Ipopt-3.12.1`.
   * Windows: TODO. If you can use the Linux subsystem and follow the Linux instructions.
 * [CppAD](https://www.coin-or.org/CppAD/)
   * Mac: `brew install cppad`
