@@ -9,14 +9,15 @@ The state of this model is composed by the car's coordinates (x, y), the car vel
 The model has two actuators, the steering angle (delta), and the acceleration (throttle).
 The update equations used are the following:
 ```C++
-      fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
-      fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[2 + psi_start + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
-      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
-      fg[2 + cte_start + i] =
-          cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-      fg[2 + epsi_start + i] =
-          epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+       // Equations of the model:
+       fg[2 + start_x + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+       fg[2 + start_y + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+       fg[2 + start_psi + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+       fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+       fg[2 + cte_start + i] =
+           cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+       fg[2 + start_epsi + i] =
+           epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
 ```
 ## Timestep Length and Elapsed Duration (N & dt)
 Defining the prediction horizon as T = N * dt I studied that with short values of T the controls are more responsive
@@ -51,8 +52,9 @@ auto coeffs = polyfit(Ptsx, Ptsy, 3);
 The cofficients of that polynomial are passed to the mpc.Solve() function to calculate the optimum solution for the actuators.
 
 ## Model Predictive Control with Latency
-!!!!!TBW
-```
+ This Model handle a 100 millisecond latency, simulating an actuators latency.
+ To handle this time I've constrained the controls to the values of the previous iteration during 100 milliseconds.
+ The trajectory is computed after the latency period and during this time the dynamics are calculated according to the vehicle model.
 ---
 
 ## Dependencies

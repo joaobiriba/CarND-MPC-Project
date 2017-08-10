@@ -149,7 +149,7 @@ int main() {
             next_x_vals.push_back(Ptsx(i));
             next_y_vals.push_back(Ptsy(i));
           }
- 
+
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
